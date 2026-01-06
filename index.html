@@ -1,0 +1,180 @@
+<!-- =========================
+     index.html
+     - 顶部：日期自动显示 + 姓名输入 + OK
+     - 下面：概算見積（红字）+ スタッフ / 担当 按钮
+     - 姓名保存到 localStorage，staff/tantou 不需要再输入
+========================= -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>概算見積</title>
+<style>
+  :root{
+    --red:#c00;
+    --bg:#f5f5f5;
+    --card:#fff;
+  }
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;
+    background:var(--bg);
+    padding:14px;
+  }
+  .wrap{ max-width:820px; margin:0 auto; }
+
+  .topbar{
+    background:var(--card);
+    border:2px solid var(--red);
+    border-radius:12px;
+    padding:12px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .date{
+    font-weight:1000;
+    font-size:18px;
+  }
+  .name-area{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+  .name-area input{
+    width:220px;
+    padding:10px 10px;
+    font-size:16px;
+    text-align:left;
+    border:2px solid #d0d0d0;
+    border-radius:8px;
+    outline:none;
+    box-sizing:border-box;
+    background:#fff;
+  }
+  .name-area input:focus{ border-color:var(--red); }
+  .ok-btn{
+    appearance:none;
+    border:0;
+    background:var(--red);
+    color:#fff;
+    border-radius:10px;
+    padding:10px 16px;
+    font-weight:900;
+    cursor:pointer;
+    user-select:none;
+  }
+  .ok-btn:active{ transform:scale(0.98); }
+
+  .hero{
+    background:var(--card);
+    border:2px solid var(--red);
+    border-radius:12px;
+    padding:18px 16px;
+  }
+  .title{
+    margin:0 0 14px;
+    font-size:28px;
+    font-weight:1000;
+    color:var(--red);
+    letter-spacing:.02em;
+  }
+  .btn-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .nav-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    background:var(--red);
+    color:#fff;
+    border-radius:12px;
+    padding:14px 12px;
+    font-size:18px;
+    font-weight:900;
+    border:0;
+    cursor:pointer;
+    user-select:none;
+  }
+  .nav-btn:active{ transform:scale(0.98); }
+
+  @media (max-width:520px){
+    .title{ font-size:24px; }
+    .btn-row{ grid-template-columns:1fr; }
+    .name-area input{ width:180px; }
+    .date{ font-size:16px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- 日期 + 姓名输入 -->
+    <div class="topbar">
+      <div class="date" id="todayText">—</div>
+      <div class="name-area">
+        <input id="userName" type="text" placeholder="名前（Name）" autocomplete="name" />
+        <button class="ok-btn" id="nameOk" type="button">OK</button>
+      </div>
+    </div>
+
+    <!-- 概算見積 + 导航按钮 -->
+    <div class="hero">
+      <h1 class="title">概算見積</h1>
+
+      <div class="btn-row">
+        <a class="nav-btn" href="staff.html" target="_blank" rel="noopener">スタッフ</a>
+        <a class="nav-btn" href="tantou.html" target="_blank" rel="noopener">担当</a>
+      </div>
+
+    </div>
+
+  </div>
+
+<script>
+  const NAME_KEY = "exchange_user_name";
+
+  function formatDateJP(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    const w = ["日","月","火","水","木","金","土"][d.getDay()];
+    return `${y}/${m}/${day}（${w}）`;
+  }
+
+  function setToday(){
+    document.getElementById("todayText").textContent = formatDateJP(new Date());
+  }
+
+  function loadName(){
+    document.getElementById("userName").value = localStorage.getItem(NAME_KEY) || "";
+  }
+
+  function bind(){
+    const btn = document.getElementById("nameOk");
+    const input = document.getElementById("userName");
+
+    btn.addEventListener("click", () => {
+      localStorage.setItem(NAME_KEY, (input.value || "").trim());
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btn.click();
+    });
+  }
+
+  setToday();
+  loadName();
+  bind();
+</script>
+</body>
+</html>

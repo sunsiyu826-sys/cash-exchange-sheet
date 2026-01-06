@@ -1,0 +1,680 @@
+<!-- =========================
+     staff.html
+     （你提供的両替計算表已完整迁移 + 顶部日期/姓名 + 本地保存）
+========================= -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>スタッフ｜両替計算表</title>
+
+<style>
+  :root{
+    --red:#c00;
+    --bg:#f5f5f5;
+    --cell:#fff;
+    --soft:#fbeaea;
+    --border:#c00;
+    --neg:#b00020;
+  }
+
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+    background:var(--bg);
+    padding:12px;
+  }
+
+  .wrap{ max-width:1100px; margin:0 auto; }
+
+  /* ===== 顶部栏：日期 + 姓名 + 返回 ===== */
+  .topbar{
+    margin-bottom:12px;
+    padding:12px 14px;
+    background:#fff;
+    border:2px solid var(--red);
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .topbar .left{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:220px;
+  }
+  .topbar .date{
+    font-size:18px;
+    font-weight:900;
+  }
+  .topbar .sub{
+    font-size:12px;
+    opacity:.75;
+    font-weight:700;
+  }
+  .topbar .right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+  .name-area{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .name-area input{
+    width:220px;
+    padding:10px 10px;
+    font-size:16px;
+    text-align:left;
+    border:2px solid #d0d0d0;
+    border-radius:8px;
+    outline:none;
+    box-sizing:border-box;
+    background:#fff;
+  }
+  .name-area input:focus{
+    border-color:var(--red);
+  }
+  .ok-btn{
+    appearance:none;
+    border:0;
+    background:var(--red);
+    color:#fff;
+    border-radius:10px;
+    padding:10px 16px;
+    font-weight:900;
+    cursor:pointer;
+    user-select:none;
+  }
+  .ok-btn:active{ transform: scale(0.98); }
+  .back-btn{
+    appearance:none;
+    border:2px solid var(--red);
+    background:#fff;
+    color:#111;
+    border-radius:10px;
+    padding:10px 12px;
+    font-weight:900;
+    cursor:pointer;
+    user-select:none;
+  }
+  .back-btn:active{ transform:scale(0.98); }
+
+  table{
+    border-collapse:collapse;
+    width:100%;
+    background:var(--cell);
+    table-layout:fixed;
+  }
+
+  th, td{
+    border:1px solid var(--border);
+    text-align:center;
+    padding:10px 6px;
+    font-size:15px;
+  }
+
+  th{
+    background:var(--red);
+    color:#fff;
+    font-weight:800;
+  }
+
+  td.kind, td.fixed{ font-weight:700; }
+  td.fixed{ background:#fafafa; }
+  td.diff{ color:var(--neg); font-weight:700; }
+
+  input{
+    width:100%;
+    padding:10px 8px;
+    font-size:18px;
+    text-align:right;
+    border:2px solid #d0d0d0;
+    border-radius:8px;
+    outline:none;
+    box-sizing:border-box;
+    background:#fff;
+  }
+  input:focus{ border-color:var(--red); }
+
+  .sum-row td{
+    font-weight:900;
+    background:var(--soft);
+    font-size:17px;
+  }
+
+  /* ===== 売上現金显示区 ===== */
+  .result-box{
+    margin-top:16px;
+    padding:16px;
+    background:#fff;
+    border:2px solid var(--red);
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    font-size:20px;
+    font-weight:900;
+    flex-wrap:wrap;
+  }
+  
+  .result-box .value{
+    font-size:26px;
+    font-weight:900;
+  }
+
+  /* ===== 減算用テーブル ===== */
+  .mini-wrap{
+    margin-top:12px;
+    background:#fff;
+    border:2px solid var(--red);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .mini-title{
+    background:var(--red);
+    color:#fff;
+    font-weight:900;
+    padding:10px 12px;
+    font-size:16px;
+  }
+  .mini-table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+  }
+  .mini-table th, .mini-table td{
+    border:1px solid var(--border);
+    padding:12px 6px;
+    font-size:16px;
+  }
+  .mini-table th{
+    background:#fff;
+    color:#111;
+    font-weight:900;
+  }
+
+  .mini-btn{
+    width:100%;
+    appearance:none;
+    border:2px solid #d0d0d0;
+    background:#fff;
+    border-radius:10px;
+    padding:12px 8px;
+    font-size:18px;
+    font-weight:900;
+    cursor:pointer;
+    user-select:none;
+  }
+  .mini-btn:active{
+    transform: scale(0.98);
+    border-color: var(--red);
+  }
+
+  .actions{
+    display:flex;
+    gap:10px;
+    padding:12px;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+  }
+  .ghost-btn{
+    appearance:none;
+    border:2px solid var(--red);
+    background:#fff;
+    color:#111;
+    border-radius:10px;
+    padding:10px 12px;
+    font-weight:900;
+    cursor:pointer;
+  }
+
+  /* レジ現金ブロック */
+  .cash-box{
+    padding:12px;
+    border-top:1px solid rgba(204,0,0,.35);
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+    align-items:end;
+  }
+  .cash-box label{
+    display:block;
+    font-weight:900;
+    margin-bottom:6px;
+  }
+  .cash-box .wide{ grid-column: 1 / -1; }
+
+  .cash-metrics{
+    margin-top:10px;
+    padding:12px;
+    background:#fff;
+    border:2px solid var(--red);
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    font-weight:900;
+  }
+  .cash-metrics .small{
+    width:100%;
+    font-size:14px;
+    font-weight:700;
+    opacity:.9;
+  }
+  .cash-metrics .big{
+    font-size:26px;
+  }
+
+  @media (max-width:600px){
+    th, td{ font-size:13px; padding:8px 4px; }
+    input{ font-size:16px; padding:8px 6px; }
+    .sum-row td{ font-size:15px; }
+    .result-box{ font-size:18px; }
+    .result-box .value{ font-size:22px; }
+    .mini-btn{ font-size:16px; padding:10px 6px; border-radius:9px; }
+    .cash-metrics .big{ font-size:22px; }
+    .cash-box{ grid-template-columns: 1fr; }
+
+    .topbar .date{ font-size:16px; }
+    .name-area input{ width:180px; }
+  }
+
+  col.kind { width:14%; }
+  col.fixed{ width:14%; }
+  col.before{ width:18%; }
+  col.diff { width:18%; }
+  col.after { width:18%; }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <!-- 顶部：日期 + 姓名 + 返回 -->
+  <div class="topbar">
+    <div class="left">
+      <div class="date" id="todayText">—</div>
+      <div class="sub">スタッフ入力（保存されます）</div>
+    </div>
+
+    <div class="right">
+      <div class="name-area">
+        <input id="userName" type="text" placeholder="名前（Name）" autocomplete="name" />
+        <button class="ok-btn" id="nameOk" type="button">OK</button>
+      </div>
+      <button class="back-btn" type="button" onclick="location.href='index.html'">首页に戻る</button>
+    </div>
+  </div>
+
+  <table id="exchangeTable">
+    <colgroup>
+      <col class="kind">
+      <col class="fixed">
+      <col class="before">
+      <col class="diff">
+      <col class="after">
+    </colgroup>
+
+    <thead>
+      <tr>
+        <th>金種</th>
+        <th>預金</th>
+        <th>両替前</th>
+        <th>差額</th>
+        <th>両替後</th>
+      </tr>
+    </thead>
+
+    <tbody id="rows"></tbody>
+
+    <tfoot>
+      <tr class="sum-row">
+        <td>総額</td>
+        <td id="sumFixed">0</td>
+        <td id="sumBefore">0</td>
+        <td id="sumDiff">0</td>
+        <td id="sumAfter">0</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="result-box">
+    <div>売上現金</div>
+    <div class="value" id="salesCash">0</div>
+  </div>
+
+  <div class="mini-wrap" id="deductPanel">
+    <div class="mini-title">マイナス／ミス（タップで「レジ現金」から減算）</div>
+
+    <table class="mini-table" aria-label="減算用表">
+      <tbody id="deductGrid"></tbody>
+    </table>
+
+    <div class="cash-box">
+      <div class="wide">
+        <label for="registerCash">レジ現金（手動入力）</label>
+        <input id="registerCash" type="number" min="0" value="0" inputmode="numeric" pattern="[0-9]*" />
+      </div>
+
+      <div class="wide">
+        <div class="cash-metrics">
+          <div>結果</div>
+          <div class="big" id="registerResult">0</div>
+          <div class="small">
+            減算合計：<span id="deductTotal">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="ghost-btn" id="resetDeduct" type="button">減算をリセット</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* =========================
+     保存キー
+  ========================= */
+  const LS = {
+    name: "exchange_user_name",
+    before: "exchange_before_map",
+    after: "exchange_after_map",
+    registerCash: "exchange_register_cash",
+    deductTotal: "exchange_deduct_total",
+    snapshot: "exchange_snapshot"
+  };
+
+  /* =========================
+     顶部：日期 + 名字
+  ========================= */
+  function formatDateJP(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const w = ["日","月","火","水","木","金","土"][d.getDay()];
+    return `${y}/${m}/${day}（${w}）`;
+  }
+  function setToday(){
+    const el = document.getElementById("todayText");
+    if (!el) return;
+    el.textContent = formatDateJP(new Date());
+  }
+  function loadName(){
+    const input = document.getElementById("userName");
+    if (!input) return;
+    input.value = localStorage.getItem(LS.name) || "";
+  }
+  function bindNameOk(){
+    const btn = document.getElementById("nameOk");
+    const input = document.getElementById("userName");
+    if (!btn || !input) return;
+
+    btn.addEventListener("click", () => {
+      localStorage.setItem(LS.name, (input.value || "").trim());
+      saveSnapshot(); // 让担当页立即看到名字
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btn.click();
+    });
+  }
+
+  /* =========================
+     你原来的逻辑（少量增强：本地保存 + 担当汇总快照）
+  ========================= */
+
+  // ===== 固定数量 =====
+  const fixedCounts = {
+    10000: 0,
+    5000: 20,
+    1000: 40,
+    500: 50,
+    100: 100,
+    50: 10,
+    10: 0,
+    5: 0,
+    1: 0
+  };
+
+  const kinds = [10000, 5000, 1000, 500, 100, 50, 10, 5, 1];
+  const rowsEl = document.getElementById("rows");
+
+  // ===== 画像の数字 =====
+  const deductRows = [
+    [5900, 5700, 5300, 4000],
+    [4900, 4700, 4300, 3000],
+    [2950, 2450, 2200, 1500],
+    [1100, 1000, 4400, 4200],
+  ];
+
+  // ===== 減算：レジ現金用 =====
+  let deductTotal = 0;
+
+  // ===== 保存用：map =====
+  function loadMap(key){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : {};
+    }catch(_){
+      return {};
+    }
+  }
+  function saveMap(key, map){
+    localStorage.setItem(key, JSON.stringify(map || {}));
+  }
+
+  // ===== 生成：両替表 =====
+  const beforeMap = loadMap(LS.before);
+  const afterMap  = loadMap(LS.after);
+
+  kinds.forEach(kind => {
+    const fixedQty = fixedCounts[kind] ?? 0;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="kind">${kind}</td>
+      <td class="fixed" data-fixed="${fixedQty}">${fixedQty}</td>
+      <td>
+        <input type="number" min="0" value="${Number(beforeMap[kind] ?? 0)}"
+          inputmode="numeric" pattern="[0-9]*"
+          data-type="before" data-unit="${kind}">
+      </td>
+      <td class="diff"></td>
+      <td>
+        <input type="number" min="0" value="${Number(afterMap[kind] ?? 0)}"
+          inputmode="numeric" pattern="[0-9]*"
+          data-type="after" data-unit="${kind}">
+      </td>
+    `;
+    rowsEl.appendChild(tr);
+  });
+
+  // ===== 生成：減算表 =====
+  const deductGrid = document.getElementById("deductGrid");
+  deductRows.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = r.map(v => {
+      if (v == null) return `<td></td>`;
+      return `<td><button type="button" class="mini-btn" data-deduct="${v}">${Number(v).toLocaleString()}</button></td>`;
+    }).join("");
+    deductGrid.appendChild(tr);
+  });
+
+  function updateRegisterCalc(){
+    const regInput = document.getElementById("registerCash");
+    const reg = Number(regInput.value) || 0;
+    const result = reg - deductTotal;
+
+    document.getElementById("deductTotal").textContent = deductTotal.toLocaleString();
+    document.getElementById("registerResult").textContent = result.toLocaleString();
+
+    // 保存
+    localStorage.setItem(LS.registerCash, String(reg));
+    localStorage.setItem(LS.deductTotal, String(deductTotal));
+
+    saveSnapshot();
+  }
+
+  function recalc(){
+    let sumFixed  = 0;
+    let sumBefore = 0;
+    let sumAfter  = 0;
+    let sumDiff   = 0;
+
+    kinds.forEach(k => { sumFixed += k * (fixedCounts[k] || 0); });
+
+    rowsEl.querySelectorAll("tr").forEach(row => {
+      const kind = Number(row.querySelector(".kind").textContent);
+      const fixedQty = Number(row.querySelector(".fixed").dataset.fixed) || 0;
+
+      const beforeInput = row.querySelector('input[data-type="before"]');
+      const afterInput  = row.querySelector('input[data-type="after"]');
+
+      const beforeQty = Number(beforeInput.value) || 0;
+      const afterQty  = Number(afterInput.value)  || 0;
+
+      sumBefore += beforeQty * kind;
+      sumAfter  += afterQty  * kind;
+
+      const diffQty = beforeQty - fixedQty;
+      const diffCell = row.querySelector(".diff");
+      if (diffQty < 0){
+        diffCell.textContent = diffQty;
+        sumDiff += diffQty * kind;
+      }else{
+        diffCell.textContent = "";
+      }
+    });
+
+    document.getElementById("sumFixed").textContent  = sumFixed.toLocaleString();
+    document.getElementById("sumBefore").textContent = sumBefore.toLocaleString();
+    document.getElementById("sumAfter").textContent  = sumAfter.toLocaleString();
+    document.getElementById("sumDiff").textContent   = sumDiff.toLocaleString();
+
+    const salesCash = sumBefore - sumFixed;
+    document.getElementById("salesCash").textContent = salesCash.toLocaleString();
+
+    saveSnapshot();
+  }
+
+  /* =========================
+     快照：担当页读取用
+  ========================= */
+  function saveSnapshot(){
+    const snap = {
+      updatedAt: new Date().toISOString(),
+      dateText: document.getElementById("todayText")?.textContent || "",
+      name: (localStorage.getItem(LS.name) || "").trim(),
+
+      sumFixed:  parseNumberText(document.getElementById("sumFixed")?.textContent),
+      sumBefore: parseNumberText(document.getElementById("sumBefore")?.textContent),
+      sumAfter:  parseNumberText(document.getElementById("sumAfter")?.textContent),
+      sumDiff:   parseNumberText(document.getElementById("sumDiff")?.textContent),
+
+      salesCash: parseNumberText(document.getElementById("salesCash")?.textContent),
+
+      registerCash: Number(localStorage.getItem(LS.registerCash) || 0),
+      deductTotal:  Number(localStorage.getItem(LS.deductTotal) || 0),
+      registerResult: parseNumberText(document.getElementById("registerResult")?.textContent),
+    };
+    localStorage.setItem(LS.snapshot, JSON.stringify(snap));
+  }
+
+  function parseNumberText(t){
+    if (!t) return 0;
+    return Number(String(t).replace(/,/g,"")) || 0;
+  }
+
+  /* =========================
+     输入体验：自动清0（原逻辑保留）
+     + 保存 before/after
+  ========================= */
+  document.addEventListener("focusin", e => {
+    if (e.target.matches("#exchangeTable input") && e.target.value === "0"){
+      e.target.value = "";
+    }
+    if (e.target.matches("#registerCash") && e.target.value === "0"){
+      e.target.value = "";
+    }
+  });
+
+  document.addEventListener("focusout", e => {
+    if (e.target.matches("#exchangeTable input") && e.target.value === ""){
+      e.target.value = "0";
+      recalc();
+    }
+    if (e.target.matches("#registerCash") && e.target.value === ""){
+      e.target.value = "0";
+      updateRegisterCalc();
+    }
+  });
+
+  document.addEventListener("input", e => {
+    if (e.target.matches("#exchangeTable input")){
+      const unit = e.target.dataset.unit;
+      const type = e.target.dataset.type; // before / after
+      const v = Number(e.target.value) || 0;
+
+      if (type === "before"){
+        const m = loadMap(LS.before);
+        m[unit] = v;
+        saveMap(LS.before, m);
+      }else if (type === "after"){
+        const m = loadMap(LS.after);
+        m[unit] = v;
+        saveMap(LS.after, m);
+      }
+
+      recalc();
+    }
+    if (e.target.matches("#registerCash")) updateRegisterCalc();
+  });
+
+  // ===== 減算表：レジ現金から引く =====
+  document.getElementById("deductPanel").addEventListener("click", (e) => {
+    const btn = e.target.closest(".mini-btn");
+    if (!btn) return;
+    const v = Number(btn.dataset.deduct) || 0;
+    deductTotal += v;
+    updateRegisterCalc();
+  });
+
+  // ===== 減算リセット =====
+  document.getElementById("resetDeduct").addEventListener("click", () => {
+    deductTotal = 0;
+    updateRegisterCalc();
+  });
+
+  /* =========================
+     初期化
+  ========================= */
+  function initRegister(){
+    const reg = Number(localStorage.getItem(LS.registerCash) || 0);
+    const d   = Number(localStorage.getItem(LS.deductTotal) || 0);
+    document.getElementById("registerCash").value = String(reg);
+    deductTotal = d;
+  }
+
+  setToday();
+  loadName();
+  bindNameOk();
+
+  initRegister();
+  recalc();
+  updateRegisterCalc();
+</script>
+</body>
+</html>

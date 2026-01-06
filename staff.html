@@ -1,0 +1,415 @@
+<!-- =========================
+     staff.html
+     - 不再显示日期/姓名输入（从首页保存）
+     - 恢复 売上現金 模块
+     - 不和 tantou 联动：去掉 snapshot 等联动代码
+     - 入力リセット 放在页面最下面
+========================= -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>スタッフ｜両替計算表</title>
+
+<style>
+  :root{
+    --red:#c00;
+    --bg:#f5f5f5;
+    --cell:#fff;
+    --soft:#fbeaea;
+    --border:#c00;
+    --neg:#b00020;
+  }
+
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+    background:var(--bg);
+    padding:12px;
+  }
+
+  .wrap{ max-width:1100px; margin:0 auto; }
+
+  /* 顶部条：只保留返回 + 显示姓名（可选） */
+  .topbar{
+    margin-bottom:12px;
+    padding:12px 14px;
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .who{
+    font-weight:1000;
+    font-size:28px;
+    color:#383838;
+  }
+
+  .back-btn{
+    appearance:none;
+    border:2px solid var(--red);
+    background:#c00;
+    color:#fff;
+    border-radius:10px;
+    padding:10px 12px;
+    font-weight:900;
+    cursor:pointer;
+    user-select:none;
+  }
+  .back-btn:active{ transform:scale(0.98); }
+
+  table{
+    border-collapse:collapse;
+    width:100%;
+    background:var(--cell);
+    table-layout:fixed;
+  }
+
+  th, td{
+    border:1px solid var(--border);
+    text-align:center;
+    padding:10px 6px;
+    font-size:15px;
+  }
+
+  th{
+    background:var(--red);
+    color:#fff;
+    font-weight:800;
+  }
+
+  td.kind, td.fixed{ font-weight:700; }
+  td.fixed{ background:#fafafa; }
+  td.diff{ color:var(--neg); font-weight:700; }
+
+  input{
+    width:100%;
+    padding:10px 8px;
+    font-size:18px;
+    text-align:right;
+    border:2px solid #d0d0d0;
+    border-radius:8px;
+    outline:none;
+    box-sizing:border-box;
+    background:#fff;
+  }
+  input:focus{ border-color:var(--red); }
+
+  .sum-row td{
+    font-weight:900;
+    background:var(--soft);
+    font-size:17px;
+  }
+
+  /* ===== 売上現金显示区 ===== */
+  .result-box{
+    margin-top:16px;
+    padding:16px;
+    background:#fff;
+    border:2px solid var(--red);
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    font-size:20px;
+    font-weight:900;
+    flex-wrap:wrap;
+  }
+  .result-box .value{
+    font-size:26px;
+    font-weight:900;
+  }
+
+  /* ===== 底部：リセット ===== */
+  .bottom-actions{
+    margin-top:14px;
+    display:flex;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .reset-btn{
+    appearance:none;
+    border:0;
+    background:var(--red);
+    color:#fff;
+    border-radius:10px;
+    padding:12px 14px;
+    font-weight:1000;
+    cursor:pointer;
+    user-select:none;
+  }
+  .reset-btn:active{ transform:scale(0.98); }
+
+  @media (max-width:600px){
+    th, td{ font-size:13px; padding:8px 4px; }
+    input{ font-size:16px; padding:8px 6px; }
+    .sum-row td{ font-size:15px; }
+    .result-box{ font-size:18px; }
+    .result-box .value{ font-size:22px; }
+  }
+
+  col.kind { width:14%; }
+  col.fixed{ width:14%; }
+  col.before{ width:18%; }
+  col.diff { width:18%; }
+  col.after { width:18%; }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="who" id="whoText"><small>名前</small>—</div>
+    <button class="back-btn" type="button" onclick="location.href='index.html'">戻る</button>
+  </div>
+
+  <table id="exchangeTable">
+    <colgroup>
+      <col class="kind">
+      <col class="fixed">
+      <col class="before">
+      <col class="diff">
+      <col class="after">
+    </colgroup>
+
+    <thead>
+      <tr>
+        <th>金種</th>
+        <th>預金</th>
+        <th>両替前</th>
+        <th>差額</th>
+        <th>両替後</th>
+      </tr>
+    </thead>
+
+    <tbody id="rows"></tbody>
+
+    <tfoot>
+      <tr class="sum-row">
+        <td>総額</td>
+        <td id="sumFixed">0</td>
+        <td id="sumBefore">0</td>
+        <td id="sumDiff">0</td>
+        <td id="sumAfter">0</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- 売上現金（原来逻辑：両替前総額 - 固定総額） -->
+  <div class="result-box">
+    <div>売上現金</div>
+    <div class="value" id="salesCash">0</div>
+  </div>
+
+  <!-- 入力リセット（放在最下面） -->
+  <div class="bottom-actions">
+    <button class="reset-btn" id="shotSave" type="button">スクリーンショット保存</button>
+    <button class="reset-btn" id="resetAll" type="button">入力リセット</button>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+  /* ========== localStorage keys（仅本页需要） ========== */
+  const NAME_KEY = "exchange_user_name";
+  const BEFORE_KEY = "exchange_before_map";
+  const AFTER_KEY  = "exchange_after_map";
+
+  /* ===== 固定数量 ===== */
+  const fixedCounts = {
+    10000: 0,
+    5000: 20,
+    1000: 40,
+    500: 50,
+    100: 100,
+    50: 10,
+    10: 0,
+    5: 0,
+    1: 0
+  };
+
+  const kinds = [10000, 5000, 1000, 500, 100, 50, 10, 5, 1];
+  const rowsEl = document.getElementById("rows");
+
+  function loadMap(key){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : {};
+    }catch(_){
+      return {};
+    }
+  }
+  function saveMap(key, map){
+    localStorage.setItem(key, JSON.stringify(map || {}));
+  }
+
+/* ===== 顶部显示 日期 + 姓名（来自首页保存） ===== */
+function formatDateJP(d){
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const w = ["日","月","火","水","木","金","土"][d.getDay()];
+  return `${y}年${m}月${day}日(${w})`;
+}
+
+function showName(){
+  const name = (localStorage.getItem(NAME_KEY) || "").trim();
+  const dateText = formatDateJP(new Date());
+
+  document.getElementById("whoText").textContent =
+    `${dateText} ${name || ""}`;
+}
+
+  /* ===== 生成：両替表（带回显） ===== */
+  const beforeMap = loadMap(BEFORE_KEY);
+  const afterMap  = loadMap(AFTER_KEY);
+
+  kinds.forEach(kind => {
+    const fixedQty = fixedCounts[kind] ?? 0;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="kind">${kind}</td>
+      <td class="fixed" data-fixed="${fixedQty}">${fixedQty}</td>
+      <td>
+        <input type="number" min="0" value="${Number(beforeMap[kind] ?? 0)}"
+          inputmode="numeric" pattern="[0-9]*"
+          data-type="before" data-unit="${kind}">
+      </td>
+      <td class="diff"></td>
+      <td>
+        <input type="number" min="0" value="${Number(afterMap[kind] ?? 0)}"
+          inputmode="numeric" pattern="[0-9]*"
+          data-type="after" data-unit="${kind}">
+      </td>
+    `;
+    rowsEl.appendChild(tr);
+  });
+
+  function recalc(){
+    let sumFixed  = 0;
+    let sumBefore = 0;
+    let sumAfter  = 0;
+    let sumDiff   = 0;
+
+    // 固定列金額合計
+    kinds.forEach(k => { sumFixed += k * (fixedCounts[k] || 0); });
+
+    rowsEl.querySelectorAll("tr").forEach(row => {
+      const kind = Number(row.querySelector(".kind").textContent);
+      const fixedQty = Number(row.querySelector(".fixed").dataset.fixed) || 0;
+
+      const beforeQty = Number(row.querySelector('input[data-type="before"]').value) || 0;
+      const afterQty  = Number(row.querySelector('input[data-type="after"]').value)  || 0;
+
+      sumBefore += beforeQty * kind;
+      sumAfter  += afterQty  * kind;
+
+      // 差額（数量）= 両替前数量 - 固定数量（負数のみ表示）
+      const diffQty = beforeQty - fixedQty;
+      const diffCell = row.querySelector(".diff");
+      if (diffQty < 0){
+        diffCell.textContent = diffQty;     // 表内は数量
+        sumDiff += diffQty * kind;          // 総額行は金額（負）
+      }else{
+        diffCell.textContent = "";
+      }
+    });
+
+    document.getElementById("sumFixed").textContent  = sumFixed.toLocaleString();
+    document.getElementById("sumBefore").textContent = sumBefore.toLocaleString();
+    document.getElementById("sumAfter").textContent  = sumAfter.toLocaleString();
+    document.getElementById("sumDiff").textContent   = sumDiff.toLocaleString();
+
+    // 売上現金（原逻辑）
+    const salesCash = sumBefore - sumFixed;
+    document.getElementById("salesCash").textContent = salesCash.toLocaleString();
+  }
+
+  /* ===== 输入体验：自动清0 ===== */
+  document.addEventListener("focusin", e => {
+    if (e.target.matches("#exchangeTable input") && e.target.value === "0"){
+      e.target.value = "";
+    }
+  });
+
+  document.addEventListener("focusout", e => {
+    if (e.target.matches("#exchangeTable input") && e.target.value === ""){
+      e.target.value = "0";
+      recalc();
+    }
+  });
+
+  /* ===== 保存 before/after + 触发计算 ===== */
+  document.addEventListener("input", e => {
+    if (!e.target.matches("#exchangeTable input")) return;
+
+    const unit = e.target.dataset.unit;
+    const type = e.target.dataset.type; // before / after
+    const v = Number(e.target.value) || 0;
+
+    if (type === "before"){
+      const m = loadMap(BEFORE_KEY);
+      m[unit] = v;
+      saveMap(BEFORE_KEY, m);
+    }else if (type === "after"){
+      const m = loadMap(AFTER_KEY);
+      m[unit] = v;
+      saveMap(AFTER_KEY, m);
+    }
+
+    recalc();
+  });
+
+  /* ===== 入力リセット（最下面按钮） ===== */
+  document.getElementById("resetAll").addEventListener("click", () => {
+    const ok = confirm("両替前／両替後の入力をすべて 0 にリセットします。よろしいですか？");
+    if (!ok) return;
+
+    saveMap(BEFORE_KEY, {});
+    saveMap(AFTER_KEY, {});
+
+    rowsEl.querySelectorAll('input[data-type="before"], input[data-type="after"]').forEach(inp => {
+      inp.value = "0";
+    });
+
+    recalc();
+  });
+
+  // ===== スクリーンショット保存 =====
+  document.getElementById("shotSave").addEventListener("click", async () => {
+    if (typeof html2canvas !== "function") {
+      alert("スクリーンショット機能が読み込めません（オフラインの可能性）。");
+      return;
+    }
+
+    const target = document.querySelector(".wrap"); // 截图范围：整个页面内容区域
+    const canvas = await html2canvas(target, { scale: 2, backgroundColor: "#f5f5f5" });
+
+    const name = (localStorage.getItem(NAME_KEY) || "").trim() || "staff";
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const safeName = name.replace(/[\\/:*?"<>|]/g, "_");
+
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `${y}${m}${day}_${safeName}.png`;
+    a.click();
+  });
+
+  /* ===== init ===== */
+  showName();
+  recalc();
+</script>
+</body>
+</html>
